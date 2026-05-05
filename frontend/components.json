@@ -1,0 +1,45 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "default",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/index.css",
+    "baseColor": "slate",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils",
+    "ui": "@/components/ui",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
+  },
+  "registries": {
+    "@ss-components": {
+      "url": "https://shadcnstudio.com/r/components/{name}.json",
+      "params": {
+        "email": "ivanroa92@gmail.com",
+        "license_key": "D70D207D-63BE-4F96-8D68-5A5647245171"
+      }
+    },
+    "@ss-themes": {
+      "url": "https://shadcnstudio.com/r/themes/{name}.json",
+      "params": {
+        "email": "ivanroa92@gmail.com",
+        "license_key": "D70D207D-63BE-4F96-8D68-5A5647245171"
+      }
+    },
+    "@ss-blocks": {
+      "url": "https://shadcnstudio.com/r/blocks/{name}.json",
+      "params": {
+        "email": "ivanroa92@gmail.com",
+        "license_key": "D70D207D-63BE-4F96-8D68-5A5647245171"
+      }
+    },
+    "@kibo-ui": "https://www.kibo-ui.com/r/{name}.json"
+  }
+}
