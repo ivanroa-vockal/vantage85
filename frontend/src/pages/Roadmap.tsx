@@ -292,12 +292,6 @@ function KanbanView({
 
 // ─── Gantt View ──────────────────────────────────────────────────────────────
 
-const STATUS_COLORS: Record<TacticStatus, string> = {
-  planned:     '#9ca3af',
-  in_progress: 'hsl(217 91% 60%)',
-  done:        'hsl(142 76% 36%)',
-  blocked:     '#ef4444',
-}
 
 function progressColor(progress: number): string {
   if (progress === 100) return '#22c55e'
