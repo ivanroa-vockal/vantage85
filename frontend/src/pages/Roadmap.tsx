@@ -394,10 +394,13 @@ function GanttView({
                         {() => (
                           <GanttFeatureItemCard
                             id={f.id}
-                            className='bg-foreground border-0 shadow-none cursor-pointer p-0 rounded-full overflow-hidden'
+                            className='border-0 shadow-none cursor-pointer p-0 rounded-full overflow-hidden'
+                            style={{ backgroundColor: f.status.color }}
                             onSelect={() => handleSelect(f.id)}
                           >
-                            <p className='flex-1 truncate text-xs font-medium text-background px-4'>{f.name}</p>
+                            <p className='flex-1 truncate text-xs font-medium text-white px-4'>
+                              {tactics.find((t) => t.id === f.id)?.progress ?? 0}% — {f.name}
+                            </p>
                           </GanttFeatureItemCard>
                         )}
                       </GanttFeatureRow>
