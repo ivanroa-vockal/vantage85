@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type {
   Organization, Business,
-  CreateOrganizationInput, UpdateOrganizationInput, CreateBusinessInput,
+  CreateOrganizationInput, UpdateOrganizationInput, CreateBusinessInput, UpdateBusinessInput,
   Invitation, SendInvitationInput,
 } from '@/types/workspace'
 

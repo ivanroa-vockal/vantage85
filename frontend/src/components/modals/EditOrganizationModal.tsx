@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  UserPlusIcon, SendIcon, Trash2Icon, RefreshCwIcon, MailIcon, ClockIcon,
+  SendIcon, Trash2Icon, RefreshCwIcon, MailIcon, ClockIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,7 +16,7 @@ import {
   updateOrganization, fetchOrganizations,
   fetchInvitations, sendInvitation, resendInvitation, deleteInvitation,
 } from '@/services/workspace'
-import type { Organization, Invitation } from '@/types/workspace'
+import type { Organization } from '@/types/workspace'
 
 // ── helpers ────────────────────────────────────────────────────────────────
 

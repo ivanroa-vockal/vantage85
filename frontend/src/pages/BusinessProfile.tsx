@@ -75,14 +75,6 @@ function normalizeUrl(url: string) {
   return url.startsWith('http') ? url : `https://${url}`
 }
 
-function displayUrl(url: string) {
-  try {
-    return new URL(normalizeUrl(url)).hostname.replace(/^www\./, '')
-  } catch {
-    return url
-  }
-}
-
 // ── Description with expand ────────────────────────────────────────────────
 
 function ExpandableDescription({ text }: { text: string }) {

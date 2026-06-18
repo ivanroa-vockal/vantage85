@@ -16,8 +16,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-  DialogDescription, DialogFooter, DialogClose,
+  Dialog, DialogContent, DialogTitle,
+  DialogDescription, DialogClose,
 } from '@/components/ui/dialog'
 import { fetchOrganizations, fetchBusinesses, createBusiness } from '@/services/workspace'
 import type { Business } from '@/types/workspace'
@@ -174,7 +174,7 @@ export function CreateBusinessModal({ open, onOpenChange, defaultOrganizationId,
       name: trimmedName,
       organizationId,
       industry,
-      websites: websites.map((u) => u.trim()).filter(Boolean),
+      websites: validUrls,
       description: description.trim() || undefined,
       logoUrl: logoPreview ?? undefined,
     })
