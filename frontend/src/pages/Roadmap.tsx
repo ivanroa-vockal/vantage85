@@ -299,13 +299,20 @@ const STATUS_COLORS: Record<TacticStatus, string> = {
   blocked:     '#ef4444',
 }
 
+function progressColor(progress: number): string {
+  if (progress === 100) return '#22c55e'
+  if (progress >= 51)   return '#eab308'
+  return '#9ca3af'
+}
+
 function tacticToFeature(t: Tactic): GanttFeature {
+  const color = progressColor(t.progress)
   return {
     id: t.id,
     name: t.name,
     startAt: new Date(t.startDate!),
     endAt: new Date(t.endDate!),
-    status: { id: t.status, name: STATUS_CONFIG[t.status].label, color: STATUS_COLORS[t.status] },
+    status: { id: t.status, name: STATUS_CONFIG[t.status].label, color },
   }
 }
 
