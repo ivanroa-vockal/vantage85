@@ -823,6 +823,7 @@ export const GanttFeatureDragHelper: FC<GanttFeatureDragHelperProps> = ({
 export type GanttFeatureItemCardProps = Pick<GanttFeature, "id"> & {
   children?: ReactNode;
   className?: string;
+  style?: CSSProperties;
   onSelect?: () => void;
 };
 
@@ -830,6 +831,7 @@ export const GanttFeatureItemCard: FC<GanttFeatureItemCardProps> = ({
   id,
   children,
   className,
+  style,
   onSelect,
 }) => {
   const [, setDragging] = useGanttDragging();
@@ -845,6 +847,7 @@ export const GanttFeatureItemCard: FC<GanttFeatureItemCardProps> = ({
         isPressed && "cursor-grabbing",
         className
       )}
+      style={style}
       onClick={onSelect}
       {...attributes}
       {...listeners}
