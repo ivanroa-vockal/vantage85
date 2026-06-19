@@ -5,7 +5,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   PlusIcon, Route, CalendarIcon, AlertCircleIcon,
-  MoreHorizontalIcon, PencilIcon, Trash2Icon, SearchIcon, SlidersHorizontalIcon,
+  MoreHorizontalIcon, PencilIcon, Trash2Icon, SearchIcon, FilterIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,12 +26,15 @@ import {
   GanttToday,
 } from '@/components/kibo-ui/gantt'
 import type { GanttFeature } from '@/components/kibo-ui/gantt'
+import { GanttBarPopover } from '@/components/gantt/GanttBarPopover'
+import { GanttDateFilter } from '@/components/gantt/GanttDateFilter'
+import type { DateFilterValue } from '@/components/gantt/GanttDateFilter'
 import { CreateTacticModal } from '@/components/modals/CreateTacticModal'
 import { TacticsStatsCard } from '@/components/blocks/TacticsStatsCard'
 import { fetchTactics, deleteTactic, updateTactic } from '@/services/roadmap'
 import { fetchObjectives } from '@/services/objectives'
 import { useWorkspaceStore } from '@/store/workspaceStore'
-import type { Tactic, TacticStatus, TacticPriority, DvcpCategory } from '@/types/roadmap'
+import type { Tactic, TacticStatus, TacticPriority, DvcpCategory, BusinessObjective } from '@/types/roadmap'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -310,10 +313,58 @@ function tacticToFeature(t: Tactic): GanttFeature {
   }
 }
 
+function GanttBarRow({
+  tactic, feature, objective, onMove, onEdit,
+}: {
+  tactic: Tactic
+  feature: GanttFeature
+  objective?: BusinessObjective
+  onMove: (id: string, startAt: Date, endAt: Date | null) => void
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  const [popoverOpen, setPopoverOpen] = useState(false)
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+
+  return (
+    <GanttFeatureRow features={[feature]} onMove={onMove}>
+      {() => (
+        <>
+          <GanttFeatureItemCard
+            id={feature.id}
+            className='border-0 shadow-none cursor-pointer p-0 rounded-full overflow-hidden'
+            style={{ backgroundColor: feature.status.color }}
+            onSelect={() => {}}
+          >
+            <p
+              className='flex-1 truncate text-xs font-medium text-white px-4'
+              onPointerUp={(e) => {
+                setMousePos({ x: e.clientX, y: e.clientY })
+                setPopoverOpen((v) => !v)
+              }}
+            >
+              {tactic.progress}% — {feature.name}
+            </p>
+          </GanttFeatureItemCard>
+          <GanttBarPopover
+            tactic={tactic}
+            objective={objective}
+            open={popoverOpen}
+            position={mousePos}
+            onOpenChange={setPopoverOpen}
+            onEdit={onEdit}
+          />
+        </>
+      )}
+    </GanttFeatureRow>
+  )
+}
+
 function GanttView({
-  tactics, onMove, onEdit, onDelete,
+  tactics, objectives, onMove, onEdit, onDelete,
 }: {
   tactics: Tactic[]
+  objectives: { id: string; name: string }[]
   onMove: (id: string, startAt: Date, endAt: Date | null) => void
   onEdit: (t: Tactic) => void
   onDelete: (t: Tactic) => void
@@ -389,21 +440,17 @@ function GanttView({
                 <GanttFeatureListGroup key={g.id}>
                   {g.tactics.map((t) => {
                     const f = featureMap.get(t.id)!
+                    const objective = objectives.find((o) => o.id === t.objectiveId)
                     return (
-                      <GanttFeatureRow key={f.id} features={[f]} onMove={onMove}>
-                        {() => (
-                          <GanttFeatureItemCard
-                            id={f.id}
-                            className='border-0 shadow-none cursor-pointer p-0 rounded-full overflow-hidden'
-                            style={{ backgroundColor: f.status.color }}
-                            onSelect={() => handleSelect(f.id)}
-                          >
-                            <p className='flex-1 truncate text-xs font-medium text-white px-4'>
-                              {tactics.find((t) => t.id === f.id)?.progress ?? 0}% — {f.name}
-                            </p>
-                          </GanttFeatureItemCard>
-                        )}
-                      </GanttFeatureRow>
+                      <GanttBarRow
+                        key={f.id}
+                        tactic={t}
+                        feature={f}
+                        objective={objective}
+                        onMove={onMove}
+                        onEdit={() => handleSelect(f.id)}
+                        onDelete={() => handleDeleteItem(f.id)}
+                      />
                     )
                   })}
                 </GanttFeatureListGroup>
@@ -450,6 +497,7 @@ export default function Roadmap() {
   const [search, setSearch] = useState('')
   const [valueDriverFilter, setValueDriverFilter] = useState<DvcpCategory | null>(null)
   const [objectiveFilter, setObjectiveFilter] = useState<string | null>(null)
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>(undefined)
 
   const { data: objectives = [] } = useQuery({
     queryKey: ['objectives', businessId],
@@ -502,8 +550,15 @@ export default function Roadmap() {
     tactics
       .filter((t) => !search.trim() || t.name.toLowerCase().includes(search.toLowerCase()) || t.description?.toLowerCase().includes(search.toLowerCase()))
       .filter((t) => !valueDriverFilter || t.dvcpCategory === valueDriverFilter)
-      .filter((t) => !objectiveFilter || t.objectiveId === objectiveFilter),
-    [tactics, search, valueDriverFilter, objectiveFilter]
+      .filter((t) => !objectiveFilter || t.objectiveId === objectiveFilter)
+      .filter((t) => {
+        if (!dateFilter?.from || !t.startDate || !t.endDate) return true
+        const start = new Date(t.startDate)
+        const end = new Date(t.endDate)
+        const filterEnd = dateFilter.to ?? dateFilter.from
+        return start <= filterEnd && end >= dateFilter.from
+      }),
+    [tactics, search, valueDriverFilter, objectiveFilter, dateFilter]
   )
 
   const hasActiveFilter = !!valueDriverFilter || !!objectiveFilter
@@ -543,10 +598,13 @@ export default function Roadmap() {
                 className='h-9 w-56 pl-8 text-sm'
               />
             </div>
+            {activeTab === 'gantt' && (
+              <GanttDateFilter value={dateFilter} onChange={setDateFilter} />
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant='outline' size='icon' className={hasActiveFilter ? 'border-foreground text-foreground' : ''}>
-                  <SlidersHorizontalIcon className='size-4' />
+                  <FilterIcon className='size-4' />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align='end' className='w-56'>
@@ -620,7 +678,7 @@ export default function Roadmap() {
         ) : (
           <>
             <TabsContent value='gantt' className='mt-4 flex-1 min-h-0 flex flex-col'>
-              <GanttView tactics={filteredTactics} onMove={handleGanttMove} onEdit={handleEdit} onDelete={handleDelete} />
+              <GanttView tactics={filteredTactics} objectives={objectives} onMove={handleGanttMove} onEdit={handleEdit} onDelete={handleDelete} />
             </TabsContent>
             <TabsContent value='kanban' className='mt-4'>
               <KanbanView tactics={filteredTactics} onEdit={handleEdit} onDelete={handleDelete} onStatusChange={handleStatusChange} />
