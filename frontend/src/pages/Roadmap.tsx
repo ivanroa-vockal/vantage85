@@ -364,7 +364,7 @@ function GanttView({
   tactics, objectives, onMove, onEdit, onDelete,
 }: {
   tactics: Tactic[]
-  objectives: { id: string; name: string }[]
+  objectives: BusinessObjective[]
   onMove: (id: string, startAt: Date, endAt: Date | null) => void
   onEdit: (t: Tactic) => void
   onDelete: (t: Tactic) => void
