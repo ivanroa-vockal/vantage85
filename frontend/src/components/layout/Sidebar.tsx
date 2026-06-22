@@ -95,6 +95,9 @@ function NavGroup({ data, label, hasBusiness }: { data: NavItem[]; label?: strin
 export function AppSidebar() {
   const { selected } = useWorkspaceStore()
   const hasBusiness = selected?.type === 'business'
+  const organizationId = selected?.type === 'organization'
+    ? selected.id
+    : selected?.organizationId ?? null
 
   return (
     <ShadcnSidebar collapsible='icon' className='!border-r-0'>
@@ -123,7 +126,11 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <SidebarBusinessSelector />
+        <div className='group-data-[collapsible=icon]:hidden flex items-stretch gap-1.5'>
+          <div className='flex-1 min-w-0'>
+            <SidebarBusinessSelector />
+          </div>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <NavGroup data={dvcpItems} label='DVCP — Digital Value Creation Plan' hasBusiness={hasBusiness} />

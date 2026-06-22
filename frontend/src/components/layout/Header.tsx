@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronsUpDownIcon, BuildingIcon, PlusIcon, SearchIcon, SettingsIcon } from 'lucide-react'
+import { ChevronsUpDownIcon, BuildingIcon, PlusIcon, SearchIcon, SettingsIcon, ExternalLink } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { useQuery } from '@tanstack/react-query'
 import { Separator } from '@/components/ui/separator'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,18 +52,18 @@ function OrganizationDropdown() {
     <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className='flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition-colors hover:bg-muted focus-visible:outline-none'>
+        <button className='flex w-[210px] items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition-colors hover:bg-muted focus-visible:outline-none'>
           {isLoading ? (
             <Skeleton className='h-4 w-32' />
           ) : (
             <>
-              <div className='flex flex-col leading-none'>
-                <span className='text-sm font-semibold'>{triggerName}</span>
-                <span className='text-xs text-muted-foreground'>
+              <div className='flex flex-col leading-none flex-1 min-w-0'>
+                <span className='text-sm font-semibold truncate'>{triggerName}</span>
+                <span className='text-xs text-muted-foreground truncate'>
                   {triggerCount} {triggerCount === 1 ? 'business' : 'businesses'}
                 </span>
               </div>
-              <ChevronsUpDownIcon className='size-4 shrink-0 text-muted-foreground' />
+              <ChevronsUpDownIcon className='size-4 shrink-0 text-muted-foreground ml-auto' />
             </>
           )}
         </button>
@@ -183,6 +185,9 @@ function OrganizationDropdown() {
 
 export function Header() {
   const { selected } = useWorkspaceStore()
+  const organizationId = selected?.type === 'organization'
+    ? selected.id
+    : selected?.organizationId ?? null
 
   return (
     <header className='bg-white sticky top-0 z-10 flex min-w-0 shrink-0 items-center justify-between gap-3 border-b -mx-3 px-5 py-2 sm:gap-6 sm:px-6 rounded-t-[16px]'>
@@ -196,7 +201,23 @@ export function Header() {
         )}
       </div>
 
-      <div className='flex shrink-0 items-center'>
+      <div className='flex shrink-0 items-center gap-1.5'>
+        {organizationId && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant='outline'
+                size='sm'
+                className='shadow-none h-8 w-8 px-0'
+                onClick={() => window.open(`/client-dashboard?org=${organizationId}`, '_blank')}
+              >
+                <ExternalLink className='h-3.5 w-3.5' />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side='bottom'>View Client Dashboard</TooltipContent>
+
+          </Tooltip>
+        )}
         <OrganizationDropdown />
       </div>
     </header>
