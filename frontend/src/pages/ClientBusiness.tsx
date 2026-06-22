@@ -4,12 +4,14 @@ import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import {
-  ArrowLeftIcon, HomeIcon, ChevronRightIcon, ChevronUpIcon, ChevronDownIcon,
+  ArrowLeftIcon, HomeIcon, ChevronRightIcon, ChevronDownIcon,
   DownloadIcon, CalendarIcon, SearchIcon, FilterIcon, AlertCircleIcon,
+  RouteIcon, BarChart2Icon,
 } from 'lucide-react'
 import { Bar, BarChart, Cell } from 'recharts'
 import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
@@ -31,7 +33,7 @@ import { fetchOrganizations, fetchBusinesses } from '@/services/workspace'
 import { fetchTactics } from '@/services/roadmap'
 import { fetchObjectives } from '@/services/objectives'
 import logoWordmarkUrl from '@/assets/logo-wordmark.png'
-import type { Tactic, TacticStatus, DvcpCategory, BusinessObjective } from '@/types/roadmap'
+import type { Tactic, TacticStatus, TacticPriority, DvcpCategory, BusinessObjective } from '@/types/roadmap'
 import type { Business, Organization } from '@/types/workspace'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -163,13 +165,9 @@ function ScoreBarChart({ pct }: { pct: number }) {
 function BusinessInfoSection({
   business,
   tactics,
-  collapsed,
-  onToggle,
 }: {
   business: Business
   tactics: Tactic[]
-  collapsed: boolean
-  onToggle: () => void
 }) {
   const avg = avgProgress(tactics)
   const score = Math.round(avg / 10)
@@ -186,27 +184,18 @@ function BusinessInfoSection({
 
       <div className='flex-1 min-w-0'>
         <p className='text-xl font-semibold leading-snug truncate'>{business.name}</p>
-        <p className='text-sm text-muted-foreground'>
-          Overall Score:{' '}
-          <span className='font-semibold text-foreground'>
-            {score}
-            <span className='text-muted-foreground font-normal'>/10</span>
-          </span>
-          <span className='mx-2 text-border'>·</span>
-          <span className='text-xs'>Last updated on {lastUpdated}</span>
-        </p>
       </div>
 
-      <div className='flex items-center gap-4 shrink-0'>
+      <div className='flex items-center gap-3 shrink-0'>
         <ScoreBarChart pct={avg} />
-        <button
-          onClick={onToggle}
-          className='inline-flex items-center gap-1 rounded-(--radius) border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted'
-          aria-label={collapsed ? 'Expand business info' : 'Collapse business info'}
-        >
-          {collapsed ? <ChevronDownIcon className='size-3.5' /> : <ChevronUpIcon className='size-3.5' />}
-          {collapsed ? 'Expand' : 'Collapse'}
-        </button>
+        <div className='text-left'>
+          <p className='text-sm font-semibold leading-snug'>
+            {score}
+            <span className='text-muted-foreground font-normal text-xs'>/10</span>
+            <span className='text-muted-foreground font-normal text-xs ml-1'>Overall Score</span>
+          </p>
+          <p className='text-xs text-muted-foreground whitespace-nowrap'>Last updated on {lastUpdated}</p>
+        </div>
       </div>
     </div>
   )
@@ -481,24 +470,44 @@ function ReadOnlyGantt({ tactics, objectives }: { tactics: Tactic[]; objectives:
 
 // ── Tactics list ──────────────────────────────────────────────────────────────
 
-function TacticRow({ tactic }: { tactic: Tactic }) {
-  const cfg = STATUS_CONFIG[tactic.status]
-  return (
-    <div className='flex items-start gap-3 py-3 border-b last:border-b-0'>
-      <div className='flex-1 min-w-0'>
-        <p className='text-sm font-medium truncate'>{tactic.name}</p>
-        {tactic.description && (
-          <p className='text-xs text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed'>
-            {tactic.description}
-          </p>
-        )}
-      </div>
-      <Badge className={`${cfg.className} border-0 font-medium shrink-0`}>{cfg.label}</Badge>
-    </div>
-  )
+const PRIORITY_CONFIG: Record<TacticPriority, { label: string; className: string }> = {
+  low:      { label: 'Low',      className: 'bg-muted text-muted-foreground' },
+  medium:   { label: 'Medium',   className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+  high:     { label: 'High',     className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
+  critical: { label: 'Critical', className: 'bg-destructive/15 text-destructive' },
 }
 
-function TacticsList({ tactics }: { tactics: Tactic[] }) {
+function PriorityBadge({ priority }: { priority: TacticPriority }) {
+  const cfg = PRIORITY_CONFIG[priority]
+  return <Badge className={`${cfg.className} border-0 font-medium`}>{cfg.label}</Badge>
+}
+
+function StatusBadge({ status }: { status: TacticStatus }) {
+  const cfg = STATUS_CONFIG[status]
+  return <Badge className={`${cfg.className} border-0 font-medium`}>{cfg.label}</Badge>
+}
+
+function formatDate(iso?: string | null) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+const DVCP_OPTIONS: { value: DvcpCategory | 'all'; label: string }[] = [
+  { value: 'all',                  label: 'All value drivers' },
+  { value: 'digital_foundation',   label: 'Digital Foundation' },
+  { value: 'revenue_growth_engine',label: 'Revenue Growth Engine' },
+  { value: 'digital_efficiency',   label: 'Digital Efficiency' },
+  { value: 'data_ai_readiness',    label: 'Data & AI Readiness' },
+]
+
+function TacticsList({ tactics, objectives }: { tactics: Tactic[]; objectives: BusinessObjective[] }) {
+  const [dvcpFilter, setDvcpFilter] = useState<DvcpCategory | 'all'>('all')
+
+  const filtered = useMemo(() =>
+    dvcpFilter === 'all' ? tactics : tactics.filter((t) => t.dvcpCategory === dvcpFilter),
+    [tactics, dvcpFilter]
+  )
+
   const tabs: { value: string; label: string; filter: (t: Tactic) => boolean }[] = [
     { value: 'all',         label: 'All',         filter: () => true },
     { value: 'planned',     label: 'To do',       filter: (t) => t.status === 'planned' },
@@ -507,34 +516,112 @@ function TacticsList({ tactics }: { tactics: Tactic[] }) {
   ]
 
   return (
-    <Tabs defaultValue='all'>
-      <TabsList className='mb-3'>
+    <div className='flex flex-col gap-3'>
+      <Tabs defaultValue='all'>
+        <div className='flex items-center justify-between gap-3 mb-3'>
+          <TabsList>
+            {tabs.map((tab) => {
+              const count = filtered.filter(tab.filter).length
+              return (
+                <TabsTrigger key={tab.value} value={tab.value} className='gap-1.5'>
+                  {tab.label}
+                  <Badge variant='outline' className='text-[10px] font-semibold px-1.5 py-0 h-4'>
+                    {count}
+                  </Badge>
+                </TabsTrigger>
+              )
+            })}
+          </TabsList>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant='outline' size='sm' className='gap-1.5 h-9 text-sm shrink-0'>
+                <FilterIcon className='size-3.5' />
+                {DVCP_OPTIONS.find((o) => o.value === dvcpFilter)?.label ?? 'All value drivers'}
+                <ChevronDownIcon className='size-3.5 text-muted-foreground' />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end' className='w-52'>
+              {DVCP_OPTIONS.map((opt) => (
+                <DropdownMenuItem
+                  key={opt.value}
+                  onClick={() => setDvcpFilter(opt.value)}
+                  className='flex items-center justify-between'
+                >
+                  {opt.label}
+                  {dvcpFilter === opt.value && <span className='size-1.5 rounded-full bg-foreground shrink-0' />}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         {tabs.map((tab) => {
-          const count = tactics.filter(tab.filter).length
+          const rows = filtered.filter(tab.filter)
           return (
-            <TabsTrigger key={tab.value} value={tab.value} className='gap-1.5'>
-              {tab.label}
-              <Badge variant='outline' className='text-[10px] font-semibold px-1.5 py-0 h-4'>
-                {count}
-              </Badge>
-            </TabsTrigger>
+            <TabsContent key={tab.value} value={tab.value}>
+              {rows.length === 0 ? (
+                <p className='text-sm text-muted-foreground py-6 text-center'>No tactics in this category.</p>
+              ) : (
+                <div className='rounded-lg border overflow-hidden'>
+                  <table className='w-full text-sm'>
+                    <thead className='bg-muted/50 text-muted-foreground'>
+                      <tr>
+                        <th className='text-left px-4 py-3 font-medium'>Tactic</th>
+                        <th className='text-left px-4 py-3 font-medium'>Status</th>
+                        <th className='text-left px-4 py-3 font-medium w-80'>Business objective</th>
+                        <th className='text-left px-4 py-3 font-medium'>Start</th>
+                        <th className='text-left px-4 py-3 font-medium'>End</th>
+                        <th className='text-left px-4 py-3 font-medium w-40'>Progress</th>
+                      </tr>
+                    </thead>
+                    <tbody className='divide-y'>
+                      {rows.map((t) => (
+                        <tr key={t.id} className='hover:bg-muted/30 transition-colors'>
+                          <td className='px-4 py-3'>
+                            {t.dvcpCategory && (
+                              <Badge variant='outline' className='text-[10px] font-medium mb-1'>
+                                {VALUE_DRIVER_LABELS[t.dvcpCategory]}
+                              </Badge>
+                            )}
+                            <p className='font-medium'>{t.name}</p>
+                            {t.description && (
+                              <p className='text-xs text-muted-foreground mt-0.5 line-clamp-1'>{t.description}</p>
+                            )}
+                            {t.areas && t.areas.length > 0 && (
+                              <div className='flex gap-1 mt-1 flex-wrap'>
+                                {t.areas.map((a) => (
+                                  <Badge key={a} variant='outline' className='text-xs py-0'>{a}</Badge>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                          <td className='px-4 py-3'><StatusBadge status={t.status} /></td>
+                          <td className='px-4 py-3'>
+                            {(() => {
+                              const obj = objectives.find((o) => o.id === t.objectiveId)
+                              return obj
+                                ? <Badge className='bg-primary/10 text-primary border-0 font-semibold pointer-events-none'>{obj.name}</Badge>
+                                : <span className='text-xs text-muted-foreground italic'>—</span>
+                            })()}
+                          </td>
+                          <td className='px-4 py-3 text-muted-foreground whitespace-nowrap'>{formatDate(t.startDate)}</td>
+                          <td className='px-4 py-3 text-muted-foreground whitespace-nowrap'>{formatDate(t.endDate)}</td>
+                          <td className='px-4 py-3'>
+                            <div className='flex items-center gap-2'>
+                              <Progress value={t.progress} className='h-1.5 flex-1' />
+                              <span className='text-xs text-muted-foreground w-8 text-right'>{t.progress}%</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </TabsContent>
           )
         })}
-      </TabsList>
-      {tabs.map((tab) => (
-        <TabsContent key={tab.value} value={tab.value}>
-          {tactics.filter(tab.filter).length === 0 ? (
-            <p className='text-sm text-muted-foreground py-6 text-center'>No tactics in this category.</p>
-          ) : (
-            <div>
-              {tactics.filter(tab.filter).map((t) => (
-                <TacticRow key={t.id} tactic={t} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      ))}
-    </Tabs>
+      </Tabs>
+    </div>
   )
 }
 
@@ -546,7 +633,7 @@ export default function ClientBusiness() {
   const orgId = params.get('org')
   const businessId = params.get('business')
 
-  const [infoCollapsed, setInfoCollapsed] = useState(false)
+
 
   const { data: orgs = [], isLoading: orgsLoading } = useQuery({
     queryKey: ['organizations'],
@@ -590,8 +677,7 @@ export default function ClientBusiness() {
 
   const isLoading = orgsLoading || bizLoading || tacticsLoading
 
-  // Suppress unused warning — objectives fetched for potential future use within this page
-  void objectives
+
 
   if (!orgId || !businessId) {
     return (
@@ -698,80 +784,117 @@ export default function ClientBusiness() {
                 <BusinessInfoSection
                   business={business}
                   tactics={tactics}
-                  collapsed={infoCollapsed}
-                  onToggle={() => setInfoCollapsed((v) => !v)}
                 />
 
-                {!infoCollapsed && (
-                  <div className='space-y-6 pt-2'>
+                <div className='space-y-6 pt-2'>
 
-                    {/* Digital Thesis */}
-                    {business.description ? (
-                      <DigitalThesisSection description={business.description} />
-                    ) : (
-                      <div className='flex items-center justify-between gap-6'>
-                        <div>
-                          <p className='text-sm font-semibold mb-1'>Digital Thesis</p>
-                          <p className='text-sm text-muted-foreground'>No digital thesis description available.</p>
-                        </div>
-                        <Button variant='outline' size='sm' onClick={() => window.print()}>
-                          <DownloadIcon className='size-3.5 mr-1.5' />
-                          Download DVCP
-                        </Button>
+                  {/* Digital Thesis */}
+                  {business.description ? (
+                    <DigitalThesisSection description={business.description} />
+                  ) : (
+                    <div className='flex items-center justify-between gap-6'>
+                      <div>
+                        <p className='text-sm font-semibold mb-1'>Digital Thesis</p>
+                        <p className='text-sm text-muted-foreground'>No digital thesis description available.</p>
                       </div>
-                    )}
+                      <Button variant='outline' size='sm' onClick={() => window.print()}>
+                        <DownloadIcon className='size-3.5 mr-1.5' />
+                        Download DVCP
+                      </Button>
+                    </div>
+                  )}
 
-                    {/* DVCP Pillar cards */}
-                    <div>
-                      <p className='text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground mb-3'>
-                        DVCP Pillars
-                      </p>
-                      <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4'>
-                        {DVCP_PILLARS.map((pillar) => (
-                          <PillarCard key={pillar.key} pillar={pillar} tactics={tactics} />
-                        ))}
-                      </div>
+                  {/* DVCP Pillar cards */}
+                  <div>
+                    <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+                      {DVCP_PILLARS.map((pillar) => (
+                        <PillarCard key={pillar.key} pillar={pillar} tactics={tactics} />
+                      ))}
                     </div>
                   </div>
-                )}
+                </div>
               </>
             ) : (
               <p className='text-sm text-muted-foreground'>Business not found.</p>
             )}
 
-            {/* Roadmap + Tactics split */}
+            {/* Main tabs: Roadmap / Metrics */}
             {!isLoading && business && (
-              <div className='flex flex-col gap-8 pt-2'>
+              <Tabs defaultValue='roadmap' className='pt-2'>
+                <TabsList className='mb-6 w-full'>
+                  <TabsTrigger value='roadmap' className='flex-1 gap-2'>
+                    <RouteIcon className='size-4' />Roadmap
+                  </TabsTrigger>
+                  <TabsTrigger value='metrics' className='flex-1 gap-2'>
+                    <BarChart2Icon className='size-4' />Metrics
+                  </TabsTrigger>
+                </TabsList>
 
-                {/* Roadmap */}
-                <div>
-                  <div className='flex items-center gap-2 mb-3'>
-                    <p className='text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground'>
-                      Roadmap
-                    </p>
-                    <div className='h-px flex-1 bg-border' />
-                  </div>
-                  <ReadOnlyGantt tactics={tactics} objectives={objectives} />
-                </div>
+                {/* ── Roadmap tab ── */}
+                <TabsContent value='roadmap'>
+                  <div className='flex flex-col gap-8'>
+                    <div>
+                      <div className='flex items-center gap-2 mb-3'>
+                        <p className='text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground'>
+                          Roadmap
+                        </p>
+                        <div className='h-px flex-1 bg-border' />
+                      </div>
+                      <ReadOnlyGantt tactics={tactics} objectives={objectives} />
+                    </div>
 
-                {/* Tactics */}
-                <div>
-                  <div className='flex items-center gap-2 mb-3'>
-                    <p className='text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground'>
-                      Tactics
-                    </p>
-                    <Badge variant='outline' className='text-[10px] font-semibold'>
-                      {tactics.length}
-                    </Badge>
-                    <div className='h-px flex-1 bg-border' />
+                    <div>
+                      <div className='flex items-center gap-2 mb-3'>
+                        <p className='text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground'>
+                          Tactics
+                        </p>
+                        <Badge variant='outline' className='text-[10px] font-semibold'>
+                          {tactics.length}
+                        </Badge>
+                        <div className='h-px flex-1 bg-border' />
+                      </div>
+                      {tactics.length === 0 ? (
+                        <p className='text-sm text-muted-foreground py-6 text-center'>No tactics found.</p>
+                      ) : (
+                        <TacticsList tactics={tactics} objectives={objectives} />
+                      )}
+                    </div>
                   </div>
-                  {tactics.length === 0 ? (
-                    <p className='text-sm text-muted-foreground py-6 text-center'>No tactics found.</p>
-                  ) : (
-                    <TacticsList tactics={tactics} />
-                  )}
-                </div>
-              </div>
+                </TabsContent>
+
+                {/* ── Metrics tab ── */}
+                <TabsContent value='metrics'>
+                  <div className='flex flex-col gap-6'>
+                    <div className='flex items-center gap-2'>
+                      <p className='text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground whitespace-nowrap'>
+                        Corral Data Dashboards
+                      </p>
+                      <div className='h-px flex-1 bg-border' />
+                    </div>
+                    <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+                      {[1, 2, 3, 4].map((n) => (
+                        <div
+                          key={n}
+                          className='rounded-lg border bg-muted/30 overflow-hidden'
+                          style={{ minHeight: 280 }}
+                        >
+                          <div className='flex items-center justify-between px-4 py-2.5 border-b bg-background'>
+                            <span className='text-xs font-medium text-muted-foreground'>Dashboard {n}</span>
+                            <Badge variant='outline' className='text-[10px] pointer-events-none'>Corral Data</Badge>
+                          </div>
+                          <div className='flex flex-col items-center justify-center h-[240px] gap-2 text-muted-foreground/40'>
+                            <svg width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5'>
+                              <rect x='3' y='3' width='18' height='18' rx='2' />
+                              <path d='M3 9h18M9 21V9' />
+                            </svg>
+                            <span className='text-xs'>Embed URL pending</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
             )}
 
             {isLoading && (
