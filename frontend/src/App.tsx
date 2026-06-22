@@ -13,6 +13,8 @@ import AuthCallback from '@/pages/AuthCallback'
 import SelectWorkspace from '@/pages/SelectWorkspace'
 import BusinessProfile from '@/pages/BusinessProfile'
 import Roadmap from '@/pages/Roadmap'
+import ClientDashboard from '@/pages/ClientDashboard'
+import ClientBusiness from '@/pages/ClientBusiness'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,6 +44,8 @@ function AppRoutes() {
         element={session ? <Navigate to='/select-workspace' replace /> : <Login />}
       />
       <Route path='/auth/callback' element={<AuthCallback />} />
+      <Route path='/client-dashboard' element={<ClientDashboard />} />
+      <Route path='/client-business' element={<ClientBusiness />} />
       <Route
         path='/select-workspace'
         element={

@@ -32,6 +32,7 @@ interface GanttBarPopoverProps {
   position: { x: number; y: number }
   onOpenChange: (open: boolean) => void
   onEdit: () => void
+  readOnly?: boolean
 }
 
 function formatScope(objective: BusinessObjective): string {
@@ -43,7 +44,7 @@ function formatScope(objective: BusinessObjective): string {
     : objective.scopeValue.toLocaleString()
 }
 
-export function GanttBarPopover({ tactic, objective, open, position, onOpenChange, onEdit }: GanttBarPopoverProps) {
+export function GanttBarPopover({ tactic, objective, open, position, onOpenChange, onEdit, readOnly = false }: GanttBarPopoverProps) {
   const ref = useRef<HTMLDivElement>(null)
   const statusCfg = STATUS_CONFIG[tactic.status]
 
@@ -90,14 +91,16 @@ export function GanttBarPopover({ tactic, objective, open, position, onOpenChang
             <span className='text-xs font-medium'>{tactic.progress}%</span>
           </div>
         </div>
-        <Button
-          variant='ghost'
-          size='icon'
-          className='size-7 shrink-0 -mr-1 -mt-0.5'
-          onClick={(e) => { e.stopPropagation(); onOpenChange(false); onEdit() }}
-        >
-          <PencilIcon className='size-3.5' />
-        </Button>
+        {!readOnly && (
+          <Button
+            variant='ghost'
+            size='icon'
+            className='size-7 shrink-0 -mr-1 -mt-0.5'
+            onClick={(e) => { e.stopPropagation(); onOpenChange(false); onEdit() }}
+          >
+            <PencilIcon className='size-3.5' />
+          </Button>
+        )}
       </div>
 
       {/* Body */}
