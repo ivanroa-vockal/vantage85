@@ -33,7 +33,7 @@ import { fetchOrganizations, fetchBusinesses } from '@/services/workspace'
 import { fetchTactics } from '@/services/roadmap'
 import { fetchObjectives } from '@/services/objectives'
 import logoWordmarkUrl from '@/assets/logo-wordmark.png'
-import type { Tactic, TacticStatus, TacticPriority, DvcpCategory, BusinessObjective } from '@/types/roadmap'
+import type { Tactic, TacticStatus, DvcpCategory, BusinessObjective } from '@/types/roadmap'
 import type { Business, Organization } from '@/types/workspace'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -470,17 +470,7 @@ function ReadOnlyGantt({ tactics, objectives }: { tactics: Tactic[]; objectives:
 
 // ── Tactics list ──────────────────────────────────────────────────────────────
 
-const PRIORITY_CONFIG: Record<TacticPriority, { label: string; className: string }> = {
-  low:      { label: 'Low',      className: 'bg-muted text-muted-foreground' },
-  medium:   { label: 'Medium',   className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  high:     { label: 'High',     className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
-  critical: { label: 'Critical', className: 'bg-destructive/15 text-destructive' },
-}
 
-function PriorityBadge({ priority }: { priority: TacticPriority }) {
-  const cfg = PRIORITY_CONFIG[priority]
-  return <Badge className={`${cfg.className} border-0 font-medium`}>{cfg.label}</Badge>
-}
 
 function StatusBadge({ status }: { status: TacticStatus }) {
   const cfg = STATUS_CONFIG[status]
