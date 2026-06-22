@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Building2, Briefcase, ArrowRight, LogOut, Search, X, Tag, WifiOff, Plus, FlaskConical, RefreshCw, Check } from 'lucide-react'
+import { Building2, Briefcase, ArrowRight, LogOut, Search, X, Tag, WifiOff, Plus, FlaskConical, RefreshCw, Check, ExternalLink } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -445,7 +445,7 @@ function OrgCard({ org, onClick }: { org: Organization; onClick: () => void }) {
       className='group cursor-pointer transition-all duration-150 hover:border-(--primary) hover:shadow-md hover:-translate-y-0.5 active:translate-y-0'
     >
       <div className='p-5 space-y-4'>
-        {/* Icon + name + date en una fila, arrow al final */}
+        {/* Icon + name + date */}
         <div className='flex items-start justify-between gap-3'>
           <div className='flex items-start gap-3 min-w-0'>
             <div className='shrink-0 h-9 w-9 rounded-lg bg-(--muted) flex items-center justify-center text-(--muted-foreground) group-hover:bg-(--primary)/10 group-hover:text-(--primary) transition-colors'>
@@ -461,10 +461,24 @@ function OrgCard({ org, onClick }: { org: Organization; onClick: () => void }) {
           <ArrowRight className='shrink-0 h-3.5 w-3.5 text-(--muted-foreground) opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all duration-150' />
         </div>
 
-        {/* Badge */}
-        <Badge variant='secondary' className='text-[10px] px-2 py-0.5 font-medium rounded-md'>
-          {org.businessCount} {org.businessCount === 1 ? 'Business' : 'Businesses'}
-        </Badge>
+        {/* Bottom row: View Client Dashboard (left) + badge (right) */}
+        <div className='flex items-center justify-between gap-2'>
+          <Button
+            variant='outline'
+            size='sm'
+            className='border-primary dark:border-primary border-dashed shadow-none h-7 text-xs px-2.5'
+            onClick={(e) => {
+              e.stopPropagation()
+              window.open(`/client-dashboard?org=${org.id}`, '_blank')
+            }}
+          >
+            <ExternalLink className='h-3 w-3' />
+            View Client Dashboard
+          </Button>
+          <Badge variant='secondary' className='text-[10px] px-2 py-0.5 font-medium rounded-md shrink-0'>
+            {org.businessCount} {org.businessCount === 1 ? 'Business' : 'Businesses'}
+          </Badge>
+        </div>
       </div>
     </Card>
   )
