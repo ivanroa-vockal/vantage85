@@ -95,9 +95,6 @@ function NavGroup({ data, label, hasBusiness }: { data: NavItem[]; label?: strin
 export function AppSidebar() {
   const { selected } = useWorkspaceStore()
   const hasBusiness = selected?.type === 'business'
-  const organizationId = selected?.type === 'organization'
-    ? selected.id
-    : selected?.organizationId ?? null
 
   return (
     <ShadcnSidebar collapsible='icon' className='!border-r-0'>
